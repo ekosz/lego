@@ -40,6 +40,20 @@ let () = {
     |> leftJoin("homes", "homes.id", "owners.home_id"),
   );
   test(
+    "whereNull",
+    {|SELECT * FROM "cats" WHERE "name" IS NOT NULL AND "owner_id" IS NULL;|},
+    lego() |> from("cats") |> whereNotNull("name") |> whereNull("owner_id"),
+  );
+  test(
+    "whereIn",
+    {|SELECT * FROM "cats" WHERE "name" IN ('fluffy', 'socks') AND "owner_id" IN (1, 2, 3) AND "numOfLegs" IN (3.0, 4.0, 3.5);|},
+    lego()
+    |> from("cats")
+    |> whereStringIn("name", ["fluffy", "socks"])
+    |> whereIntIn("owner_id", [1, 2, 3])
+    |> whereFloatIn("numOfLegs", [3., 4., 3.5]),
+  );
+  test(
     "selectKitchenSink",
     {|SELECT "cats"."name", "owners"."name", "homes"."name" FROM "cats" JOIN "owners" ON "owners"."id" = "cats"."owner_id" LEFT JOIN "homes" ON "homes"."id" = "owners"."home_id" WHERE "owners"."tenant_id" = 55 AND "cats"."numOfLegs" >= 4.0 AND "owners"."name" <> 'Bob';|},
     lego()

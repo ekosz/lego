@@ -81,22 +81,28 @@ module WhereBuilder = {
     | Raw(string)
     | IntOp(string, int, compareOp)
     | FloatOp(string, float, compareOp)
-    | StringOp(string, string, compareOp);
+    | StringOp(string, string, compareOp)
+    | IsNull(string)
+    | NotNull(string)
+    | IntIn(string, list(int))
+    | FloatIn(string, list(float))
+    | StringIn(string, list(string))
 
   let buildP = (name, x, op) => escape(name) ++ " " ++ compareOpToString(op) ++ " " ++ x;
+  let buildIn = (mapper: 'a => string, name: string, xs: list('a)): string =>
+    escape(name) ++ " IN (" ++ (xs |> List.map(mapper) |> String.concat(", ")) ++ ")";
 
   let build = (w: t): string =>
     switch (w) {
     | Raw(x) => x
-    | IntOp(name, x, op) => buildP(name, string_of_int(x), op)
-    | FloatOp(name, x, op) =>
-      /* We need to add a check here for floats like 4. and turn them into 4.0 */
-      let floatString = string_of_float(x);
-      let finalString =
-        floatString.[String.length(floatString) - 1] == '.' ? floatString ++ "0" : floatString;
-
-      buildP(name, finalString, op);
-    | StringOp(name, x, op) => buildP(name, "'" ++ x ++ "'", op)
+    | IntOp(name, x, op) => buildP(name, intForSQL(x), op)
+    | FloatOp(name, x, op) => buildP(name, floatForSQL(x), op)
+    | StringOp(name, x, op) => buildP(name, stringForSQL(x), op)
+    | IsNull(name) => escape(name) ++ " IS NULL"
+    | NotNull(name) => escape(name) ++ " IS NOT NULL"
+    | IntIn(name, xs) => buildIn(intForSQL, name, xs)
+    | FloatIn(name, xs) => buildIn(floatForSQL, name, xs)
+    | StringIn(name, xs) => buildIn(stringForSQL, name, xs)
     };
 
   let buildAll = (~prettyPrint=false, xs: list(t)): string => {
@@ -123,7 +129,7 @@ type t = {
   wheres: list(WhereBuilder.t),
 };
 
-let lego = (~tableName=?, ~prettyPrint=false, ()) => {
+let lego = (~tableName=?, ~prettyPrint=false, ()): t => {
   prettyPrint,
   from:
     switch (tableName) {
@@ -183,6 +189,26 @@ let whereFloat = (name, op, x, builder) => {
 let whereString = (name, op, x, builder) => {
   ...builder,
   wheres: [WhereBuilder.StringOp(name, x, op), ...builder.wheres],
+};
+let whereNull = (name, builder) => {
+  ...builder,
+  wheres: [WhereBuilder.IsNull(name), ...builder.wheres],
+};
+let whereNotNull = (name, builder) => {
+  ...builder,
+  wheres: [WhereBuilder.NotNull(name), ...builder.wheres],
+};
+let whereStringIn = (name, xs, builder) => {
+  ...builder,
+  wheres: [WhereBuilder.StringIn(name, xs), ...builder.wheres],
+};
+let whereIntIn = (name, xs, builder) => {
+  ...builder,
+  wheres: [WhereBuilder.IntIn(name, xs), ...builder.wheres],
+};
+let whereFloatIn = (name, xs, builder) => {
+  ...builder,
+  wheres: [WhereBuilder.FloatIn(name, xs), ...builder.wheres],
 };
 
 let toSelectSQL = builder => {
