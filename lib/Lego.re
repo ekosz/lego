@@ -45,9 +45,15 @@ let whereFloat = (name, op, x, builder: t) => aw(builder, FloatOpWhere(name, x, 
 let whereString = (name, op, x, builder: t) => aw(builder, StringOpWhere(name, x, op));
 let whereNull = (name, builder: t) => aw(builder, IsNullWhere(name));
 let whereNotNull = (name, builder: t) => aw(builder, NotNullWhere(name));
+let whereTrue = (name, builder: t) => aw(builder, IsTrueWhere(name));
+let whereFalse = (name, builder: t) => aw(builder, IsFalseWhere(name));
 let whereStringIn = (name, xs, builder: t) => aw(builder, StringInWhere(name, xs));
 let whereIntIn = (name, xs, builder: t) => aw(builder, IntInWhere(name, xs));
 let whereFloatIn = (name, xs, builder: t) => aw(builder, FloatInWhere(name, xs));
+let whereInSub = (name, cb, builder: t) => {
+  let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
+  aw(builder, SubInWhere(name, subBuilder));
+};
 let whereExists = (cb, builder: t) => {
   let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
   aw(builder, ExistsWhere(subBuilder));

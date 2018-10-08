@@ -94,6 +94,15 @@ let () = {
   );
   test("limit", {|SELECT * FROM "cats" LIMIT 1|}, lego() |> from("cats") |> limit(1));
   test("offset", {|SELECT * FROM "cats" OFFSET 1|}, lego() |> from("cats") |> offset(1));
+  test(
+    "whereInSub",
+    {|SELECT * FROM "cats" WHERE "owner_id" IN (SELECT "id" FROM "owners" WHERE "disabled" IS TRUE)|},
+    lego()
+    |> from("cats")
+    |> whereInSub("owner_id", b =>
+         b |> select(["id"]) |> from("owners") |> whereTrue("disabled")
+       ),
+  );
 
   let kitchenSink =
     lego()
@@ -105,11 +114,13 @@ let () = {
     |> whereFloat("cats.numOfLegs", GreaterThanEqual, 4.)
     |> whereString("owners.name", NotEqual, "Bob")
     |> whereNotExists(b => b |> from("families") |> whereRaw("families.id = cats.family_id"))
-    |> order("cats.name", ASC);
+    |> order("cats.name", ASC)
+    |> limit(100)
+    |> offset(100);
 
   test(
     "selectKitchenSink",
-    {|SELECT "cats"."name", "owners"."name", "homes"."name" FROM "cats" JOIN "owners" ON "owners"."id" = "cats"."owner_id" LEFT JOIN "homes" ON "homes"."id" = "owners"."home_id" WHERE "owners"."tenant_id" = 55 AND "cats"."numOfLegs" >= 4.0 AND "owners"."name" <> 'Bob' AND NOT EXISTS (SELECT 1 FROM "families" WHERE families.id = cats.family_id) ORDER BY "cats"."name" ASC|},
+    {|SELECT "cats"."name", "owners"."name", "homes"."name" FROM "cats" JOIN "owners" ON "owners"."id" = "cats"."owner_id" LEFT JOIN "homes" ON "homes"."id" = "owners"."home_id" WHERE "owners"."tenant_id" = 55 AND "cats"."numOfLegs" >= 4.0 AND "owners"."name" <> 'Bob' AND NOT EXISTS (SELECT 1 FROM "families" WHERE families.id = cats.family_id) ORDER BY "cats"."name" ASC LIMIT 100 OFFSET 100|},
     kitchenSink,
   );
   test(
@@ -131,6 +142,8 @@ AND NOT EXISTS (
   WHERE families.id = cats.family_id
 )
 ORDER BY "cats"."name" ASC
+LIMIT 100
+OFFSET 100
 |},
     ),
     {...kitchenSink, prettyPrint: true},

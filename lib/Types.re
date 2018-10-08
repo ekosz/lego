@@ -49,9 +49,12 @@ and whereBuilder =
   | StringOpWhere(string, string, compareOp)
   | IsNullWhere(string)
   | NotNullWhere(string)
+  | IsTrueWhere(string)
+  | IsFalseWhere(string)
   | IntInWhere(string, list(int))
   | FloatInWhere(string, list(float))
   | StringInWhere(string, list(string))
+  | SubInWhere(string, builder)
   | ExistsWhere(builder)
   | NotExistsWhere(builder)
 and orderBuilder =

@@ -59,9 +59,18 @@ let formatWhere = (~prettyPrint=false, ~toSQL, w: Types.whereBuilder): string =>
   | StringOpWhere(name, x, op) => formatOp(name, stringForSQL(x), op)
   | IsNullWhere(name) => escape(name) ++ " IS NULL"
   | NotNullWhere(name) => escape(name) ++ " IS NOT NULL"
+  | IsTrueWhere(name) => escape(name) ++ " IS TRUE"
+  | IsFalseWhere(name) => escape(name) ++ " IS FALSE"
   | IntInWhere(name, xs) => formatInOp(intForSQL, name, xs)
   | FloatInWhere(name, xs) => formatInOp(floatForSQL, name, xs)
   | StringInWhere(name, xs) => formatInOp(stringForSQL, name, xs)
+  | SubInWhere(name, builder) =>
+    escape(name)
+    ++ " IN ("
+    ++ (prettyPrint ? "\n" : "")
+    ++ toSQL({...builder, prettyPrint})
+    ++ (prettyPrint ? "\n" : "")
+    ++ ")"
   | ExistsWhere(builder) =>
     "EXISTS ("
     ++ (prettyPrint ? "\n" : "")
