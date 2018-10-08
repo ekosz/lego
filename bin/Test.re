@@ -72,6 +72,28 @@ let () = {
          |> whereString("owners.name", Equal, "Bob")
        ),
   );
+  test(
+    "orderRaw",
+    {|SELECT * FROM "cats" ORDER BY cats.name ASC NULLS LAST|},
+    lego() |> from("cats") |> orderRaw("cats.name ASC NULLS LAST"),
+  );
+  test(
+    "order",
+    {|SELECT * FROM "cats" ORDER BY "cats"."name" ASC, "numOfLogs" DESC|},
+    lego() |> from("cats") |> order("cats.name", ASC) |> order("numOfLogs", DESC),
+  );
+  test(
+    "groupBy",
+    {|SELECT * FROM "cats" GROUP BY "name"|},
+    lego() |> from("cats") |> groupBy("name"),
+  );
+  test(
+    "groupByRaw",
+    {|SELECT * FROM "cats" GROUP BY 1|},
+    lego() |> from("cats") |> groupByRaw("1"),
+  );
+  test("limit", {|SELECT * FROM "cats" LIMIT 1|}, lego() |> from("cats") |> limit(1));
+  test("offset", {|SELECT * FROM "cats" OFFSET 1|}, lego() |> from("cats") |> offset(1));
 
   let kitchenSink =
     lego()
@@ -82,11 +104,12 @@ let () = {
     |> whereInt("owners.tenant_id", Equal, 55)
     |> whereFloat("cats.numOfLegs", GreaterThanEqual, 4.)
     |> whereString("owners.name", NotEqual, "Bob")
-    |> whereNotExists(b => b |> from("families") |> whereRaw("families.id = cats.family_id"));
+    |> whereNotExists(b => b |> from("families") |> whereRaw("families.id = cats.family_id"))
+    |> order("cats.name", ASC);
 
   test(
     "selectKitchenSink",
-    {|SELECT "cats"."name", "owners"."name", "homes"."name" FROM "cats" JOIN "owners" ON "owners"."id" = "cats"."owner_id" LEFT JOIN "homes" ON "homes"."id" = "owners"."home_id" WHERE "owners"."tenant_id" = 55 AND "cats"."numOfLegs" >= 4.0 AND "owners"."name" <> 'Bob' AND NOT EXISTS (SELECT 1 FROM "families" WHERE families.id = cats.family_id)|},
+    {|SELECT "cats"."name", "owners"."name", "homes"."name" FROM "cats" JOIN "owners" ON "owners"."id" = "cats"."owner_id" LEFT JOIN "homes" ON "homes"."id" = "owners"."home_id" WHERE "owners"."tenant_id" = 55 AND "cats"."numOfLegs" >= 4.0 AND "owners"."name" <> 'Bob' AND NOT EXISTS (SELECT 1 FROM "families" WHERE families.id = cats.family_id) ORDER BY "cats"."name" ASC|},
     kitchenSink,
   );
   test(
@@ -107,6 +130,7 @@ AND NOT EXISTS (
   FROM "families"
   WHERE families.id = cats.family_id
 )
+ORDER BY "cats"."name" ASC
 |},
     ),
     {...kitchenSink, prettyPrint: true},

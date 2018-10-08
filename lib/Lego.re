@@ -1,5 +1,3 @@
-open Utils;
-
 type t = Types.builder;
 
 let lego = (~tableName=?, ~depth=0, ~prettyPrint=false, ()): t => {
@@ -10,10 +8,16 @@ let lego = (~tableName=?, ~depth=0, ~prettyPrint=false, ()): t => {
     | Some(t) => Some(NormalFrom(t))
     | None => None
     },
+  limit: None,
+  offset: None,
   operation: Select,
   select: None,
+  ctes: [],
   joins: [],
   wheres: [],
+  orders: [],
+  groupBys: [],
+  unions: [],
 };
 
 let ss /* set select */ = (b: t, x) => {...b, operation: Select, select: Some(x)};
@@ -52,5 +56,16 @@ let whereNotExists = (cb, builder: t) => {
   let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
   aw(builder, NotExistsWhere(subBuilder));
 };
+
+let ao /* append order */ = (b: t, x) => {...b, orders: [x, ...b.orders]};
+let orderRaw = (rawString, builder: t) => ao(builder, RawOrder(rawString));
+let order = (column, direction, builder: t) => ao(builder, NormalOrder(column, direction));
+
+let ag /* append group */ = (b: t, x) => {...b, groupBys: [x, ...b.groupBys]};
+let groupByRaw = (rawString, builder: t) => ag(builder, RawGroupBy(rawString));
+let groupBy = (column, builder: t) => ag(builder, NormalGroupBy(column));
+
+let limit = (limit, builder: t) => {...builder, limit: Some(limit)};
+let offset = (offset, builder: t) => {...builder, offset: Some(offset)};
 
 let toSQL = Formatter.toSQL;

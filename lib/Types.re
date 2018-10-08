@@ -12,14 +12,24 @@ type compareOp =
   | LessThan
   | LessThanEqual;
 
+type orderDirection =
+  | ASC
+  | DESC;
+
 type builder = {
   prettyPrint: bool,
   depth: int,
   select: option(selectBuilder),
+  limit: option(int),
+  offset: option(int),
   operation: crud,
+  ctes: list(cteBuilder),
   from: option(fromBuilder),
   joins: list(joinBuilder),
   wheres: list(whereBuilder),
+  orders: list(orderBuilder),
+  groupBys: list(groupByBuilder),
+  unions: list(unionBuilder),
 }
 and selectBuilder =
   | RawSelect(string)
@@ -43,4 +53,16 @@ and whereBuilder =
   | FloatInWhere(string, list(float))
   | StringInWhere(string, list(string))
   | ExistsWhere(builder)
-  | NotExistsWhere(builder);
+  | NotExistsWhere(builder)
+and orderBuilder =
+  | RawOrder(string)
+  | NormalOrder(string, orderDirection)
+and groupByBuilder =
+  | RawGroupBy(string)
+  | NormalGroupBy(string)
+and cteBuilder =
+  | RawCTE(string)
+  | NormalCTE(string, builder)
+and unionBuilder =
+  | Union(builder)
+  | UnionAll(builder);

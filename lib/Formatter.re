@@ -10,6 +10,12 @@ let compareOpToString = (op: Types.compareOp): string =>
   | LessThanEqual => "<="
   };
 
+let orderDirectionToString = (d: Types.orderDirection): string =>
+  switch (d) {
+  | ASC => "ASC"
+  | DESC => "DESC"
+  };
+
 let formatFrom = (~prettyPrint=false, f: Types.fromBuilder): string =>
   switch (f) {
   | RawFrom(x) => x
@@ -83,6 +89,47 @@ let formatWheres = (~prettyPrint=false, ~toSQL, xs: list(Types.whereBuilder)): s
   );
 };
 
+let formatGroupBy = (g: Types.groupByBuilder) =>
+  switch (g) {
+  | RawGroupBy(x) => x
+  | NormalGroupBy(column) => escape(column)
+  };
+let formatGroupBys = (~prettyPrint, xs: list(Types.groupByBuilder)) =>
+  switch (xs) {
+  | [] => ""
+  | rest => "GROUP BY " ++ (xs |> List.map(formatGroupBy) |> commaJoin)
+  };
+
+let formatOrder = (~prettyPrint, o: Types.orderBuilder) =>
+  switch (o) {
+  | RawOrder(x) => x
+  | NormalOrder(name, direction) => escape(name) ++ " " ++ orderDirectionToString(direction)
+  };
+let formatOrders = (~prettyPrint, xs: list(Types.orderBuilder)) => {
+  let delimiter = ", ";
+  xs
+  |> List.rev
+  |> List.map(formatOrder(~prettyPrint))
+  |> (
+    fun
+    | [] => ""
+    | [x] => "ORDER BY " ++ x
+    | [head, ...tail] => "ORDER BY " ++ head ++ delimiter ++ String.concat(delimiter, tail)
+  );
+};
+
+let formatLimit = (~prettyPrint, limit: option(int)) =>
+  switch (limit) {
+  | None => ""
+  | Some(x) => "LIMIT " ++ intForSQL(x)
+  };
+
+let formatOffset = (~prettyPrint, offset: option(int)) =>
+  switch (offset) {
+  | None => ""
+  | Some(x) => "OFFSET " ++ intForSQL(x)
+  };
+
 let toSelectSQL = (builder: Types.builder, toSQL) => {
   let prettyPrint = builder.prettyPrint;
   let depth = builder.depth;
@@ -96,6 +143,10 @@ let toSelectSQL = (builder: Types.builder, toSQL) => {
     formatFrom(~prettyPrint, from),
     formatJoins(~prettyPrint, builder.joins),
     formatWheres(~prettyPrint, ~toSQL, builder.wheres),
+    formatGroupBys(~prettyPrint, builder.groupBys),
+    formatOrders(~prettyPrint, builder.orders),
+    formatLimit(~prettyPrint, builder.limit),
+    formatOffset(~prettyPrint, builder.offset),
   ]
   |> List.filter(x => x != "")
   |> String.concat(prettyPrint ? "\n" ++ String.make(depth * 2, ' ') : " ")
