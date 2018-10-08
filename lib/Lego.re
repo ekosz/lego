@@ -16,77 +16,41 @@ let lego = (~tableName=?, ~depth=0, ~prettyPrint=false, ()): t => {
   wheres: [],
 };
 
-let select = (ls, builder: t) => {...builder, select: Some(ListSelect(ls))};
-let selectStar = (builder: t) => {...builder, operation: Select, select: Some(RawSelect("*"))};
-let selectRaw = (rawString, builder: t) => {
-  ...builder,
-  operation: Select,
-  select: Some(RawSelect(rawString)),
-};
+let ss /* set select */ = (b: t, x) => {...b, operation: Select, select: Some(x)};
+let select = (ls, builder: t) => ss(builder, ListSelect(ls));
+let selectStar = (builder: t) => ss(builder, RawSelect("*"));
+let selectRaw = (rawString, builder: t) => ss(builder, RawSelect(rawString));
 
-let from = (tableName, builder: t) => {...builder, from: Some(NormalFrom(tableName))};
-let fromRaw = (rawString, builder: t) => {...builder, from: Some(RawFrom(rawString))};
+let sf /* set from */ = (b: t, x) => {...b, from: Some(x)};
+let from = (tableName, builder: t) => sf(builder, NormalFrom(tableName));
+let fromRaw = (rawString, builder: t) => sf(builder, RawFrom(rawString));
 
-let joinRaw = (rawString, builder: t) => {
-  ...builder,
-  joins: [RawJoin(rawString), ...builder.joins],
-};
-let join = (tableName, left, right, builder: t) => {
-  ...builder,
-  joins: [InnerJoin(tableName, left, right), ...builder.joins],
-};
-let leftJoin = (tableName, left, right, builder: t) => {
-  ...builder,
-  joins: [LeftJoin(tableName, left, right), ...builder.joins],
-};
-let rightJoin = (tableName, left, right, builder: t) => {
-  ...builder,
-  joins: [RightJoin(tableName, left, right), ...builder.joins],
-};
+let aj /* append join */ = (b: t, x) => {...b, joins: [x, ...b.joins]};
+let joinRaw = (rawString, builder: t) => aj(builder, RawJoin(rawString));
+let join = (tableName, left, right, builder: t) =>
+  aj(builder, InnerJoin(tableName, left, right));
+let leftJoin = (tableName, left, right, builder: t) =>
+  aj(builder, LeftJoin(tableName, left, right));
+let rightJoin = (tableName, left, right, builder: t) =>
+  aj(builder, RightJoin(tableName, left, right));
 
-let whereRaw = (rawString, builder: t) => {
-  ...builder,
-  wheres: [RawWhere(rawString), ...builder.wheres],
-};
-let whereInt = (name, op, x, builder: t) => {
-  ...builder,
-  wheres: [IntOpWhere(name, x, op), ...builder.wheres],
-};
-let whereFloat = (name, op, x, builder: t) => {
-  ...builder,
-  wheres: [FloatOpWhere(name, x, op), ...builder.wheres],
-};
-let whereString = (name, op, x, builder: t) => {
-  ...builder,
-  wheres: [StringOpWhere(name, x, op), ...builder.wheres],
-};
-let whereNull = (name, builder: t) => {
-  ...builder,
-  wheres: [IsNullWhere(name), ...builder.wheres],
-};
-let whereNotNull = (name, builder: t) => {
-  ...builder,
-  wheres: [NotNullWhere(name), ...builder.wheres],
-};
-let whereStringIn = (name, xs, builder: t) => {
-  ...builder,
-  wheres: [StringInWhere(name, xs), ...builder.wheres],
-};
-let whereIntIn = (name, xs, builder: t) => {
-  ...builder,
-  wheres: [IntInWhere(name, xs), ...builder.wheres],
-};
-let whereFloatIn = (name, xs, builder: t) => {
-  ...builder,
-  wheres: [FloatInWhere(name, xs), ...builder.wheres],
-};
+let aw /* append where */ = (b: t, x) => {...b, wheres: [x, ...b.wheres]};
+let whereRaw = (rawString, builder: t) => aw(builder, RawWhere(rawString));
+let whereInt = (name, op, x, builder: t) => aw(builder, IntOpWhere(name, x, op));
+let whereFloat = (name, op, x, builder: t) => aw(builder, FloatOpWhere(name, x, op));
+let whereString = (name, op, x, builder: t) => aw(builder, StringOpWhere(name, x, op));
+let whereNull = (name, builder: t) => aw(builder, IsNullWhere(name));
+let whereNotNull = (name, builder: t) => aw(builder, NotNullWhere(name));
+let whereStringIn = (name, xs, builder: t) => aw(builder, StringInWhere(name, xs));
+let whereIntIn = (name, xs, builder: t) => aw(builder, IntInWhere(name, xs));
+let whereFloatIn = (name, xs, builder: t) => aw(builder, FloatInWhere(name, xs));
 let whereExists = (cb, builder: t) => {
-  let subBuilder = cb(lego(~prettyPrint=builder.prettyPrint, ~depth=builder.depth + 1, ()));
-  {...builder, wheres: [ExistsWhere(subBuilder), ...builder.wheres]};
+  let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
+  aw(builder, ExistsWhere(subBuilder));
 };
 let whereNotExists = (cb, builder: t) => {
-  let subBuilder = cb(lego(~prettyPrint=builder.prettyPrint, ~depth=builder.depth + 1, ()));
-  {...builder, wheres: [NotExistsWhere(subBuilder), ...builder.wheres]};
+  let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
+  aw(builder, NotExistsWhere(subBuilder));
 };
 
 let toSQL = Formatter.toSQL;

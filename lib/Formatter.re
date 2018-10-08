@@ -75,13 +75,13 @@ module Where = {
     | ExistsWhere(builder) =>
       "EXISTS ("
       ++ (prettyPrint ? "\n" : "")
-      ++ toSQL({...builder, select: Some(RawSelect("SELECT 1"))})
+      ++ toSQL({...builder, prettyPrint, select: Some(RawSelect("SELECT 1"))})
       ++ (prettyPrint ? "\n" : "")
       ++ ")"
     | NotExistsWhere(builder) =>
       "NOT EXISTS ("
       ++ (prettyPrint ? "\n" : "")
-      ++ toSQL({...builder, select: Some(RawSelect("SELECT 1"))})
+      ++ toSQL({...builder, prettyPrint, select: Some(RawSelect("SELECT 1"))})
       ++ (prettyPrint ? "\n" : "")
       ++ ")"
     };
