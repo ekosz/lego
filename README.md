@@ -4,7 +4,7 @@ WIP SQL generator for OCaml & Reason. Check out `bin/Test.re` for examples.
 
 ## Usage
 
-You need Esy, you can install the beta using [npm][]:
+You need Esy, you can install the beta using yarn:
 
     % yarn global add esy@latest
 
