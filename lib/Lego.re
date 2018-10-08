@@ -11,7 +11,7 @@ let lego = (~tableName=?, ~depth=0, ~prettyPrint=false, ()): t => {
   limit: None,
   offset: None,
   operation: Select,
-  select: None,
+  selects: [],
   ctes: [],
   joins: [],
   wheres: [],
@@ -20,10 +20,11 @@ let lego = (~tableName=?, ~depth=0, ~prettyPrint=false, ()): t => {
   unions: [],
 };
 
-let ss /* set select */ = (b: t, x) => {...b, operation: Select, select: Some(x)};
-let select = (ls, builder: t) => ss(builder, ListSelect(ls));
-let selectStar = (builder: t) => ss(builder, RawSelect("*"));
-let selectRaw = (rawString, builder: t) => ss(builder, RawSelect(rawString));
+let ase /* append select */ = (b: t, x) => {...b, selects: [x, ...b.selects]};
+let select = (x, builder: t) => ase(builder, NormalSelect(x));
+let selectStar = (builder: t) => {...builder, selects: [RawSelect("*")]};
+let selectList = (xs, builder: t) => List.fold_left((b, x) => select(x, b), builder, xs);
+let selectRaw = (rawString, builder: t) => ase(builder, RawSelect(rawString));
 
 let sf /* set from */ = (b: t, x) => {...b, from: Some(x)};
 let from = (tableName, builder: t) => sf(builder, NormalFrom(tableName));
@@ -52,7 +53,11 @@ let whereIntIn = (name, xs, builder: t) => aw(builder, IntInWhere(name, xs));
 let whereFloatIn = (name, xs, builder: t) => aw(builder, FloatInWhere(name, xs));
 let whereInSub = (name, cb, builder: t) => {
   let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
-  aw(builder, SubInWhere(name, subBuilder));
+  aw(builder, SubOpWhere(name, In, subBuilder));
+};
+let whereSub = (name, op, cb, builder: t) => {
+  let subBuilder = cb(lego(~depth=builder.depth + 1, ()));
+  aw(builder, SubOpWhere(name, op, subBuilder));
 };
 let whereExists = (cb, builder: t) => {
   let subBuilder = cb(lego(~depth=builder.depth + 1, ()));

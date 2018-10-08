@@ -10,7 +10,8 @@ type compareOp =
   | GreaterThan
   | GreaterThanEqual
   | LessThan
-  | LessThanEqual;
+  | LessThanEqual
+  | In;
 
 type orderDirection =
   | ASC
@@ -19,11 +20,11 @@ type orderDirection =
 type builder = {
   prettyPrint: bool,
   depth: int,
-  select: option(selectBuilder),
   limit: option(int),
   offset: option(int),
   operation: crud,
   ctes: list(cteBuilder),
+  selects: list(selectBuilder),
   from: option(fromBuilder),
   joins: list(joinBuilder),
   wheres: list(whereBuilder),
@@ -33,7 +34,7 @@ type builder = {
 }
 and selectBuilder =
   | RawSelect(string)
-  | ListSelect(list(string))
+  | NormalSelect(string)
 and fromBuilder =
   | RawFrom(string)
   | NormalFrom(string)
@@ -47,6 +48,7 @@ and whereBuilder =
   | IntOpWhere(string, int, compareOp)
   | FloatOpWhere(string, float, compareOp)
   | StringOpWhere(string, string, compareOp)
+  | SubOpWhere(string, compareOp, builder)
   | IsNullWhere(string)
   | NotNullWhere(string)
   | IsTrueWhere(string)
@@ -54,7 +56,6 @@ and whereBuilder =
   | IntInWhere(string, list(int))
   | FloatInWhere(string, list(float))
   | StringInWhere(string, list(string))
-  | SubInWhere(string, builder)
   | ExistsWhere(builder)
   | NotExistsWhere(builder)
 and orderBuilder =

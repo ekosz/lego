@@ -8,6 +8,7 @@ let compareOpToString = (op: Types.compareOp): string =>
   | GreaterThanEqual => ">="
   | LessThan => "<"
   | LessThanEqual => "<="
+  | In => "IN"
   };
 
 let orderDirectionToString = (d: Types.orderDirection): string =>
@@ -22,16 +23,17 @@ let formatFrom = (~prettyPrint=false, f: Types.fromBuilder): string =>
   | NormalFrom(x) => "FROM " ++ escape(x)
   };
 
-let formatSelect = (~prettyPrint=false, s: option(Types.selectBuilder)): string =>
+let formatSelect = (~prettyPrint=false, s: Types.selectBuilder): string =>
   switch (s) {
-  | Some(x) =>
-    switch (x) {
-    | RawSelect(y) => y
-    | ListSelect(xs) =>
-      let delimiter = prettyPrint ? ",\n       " : ", ";
-      "SELECT " ++ (xs |> List.map(escape) |> String.concat(delimiter));
-    }
-  | None => "SELECT *"
+  | RawSelect(x) => x
+  | NormalSelect(x) => escape(x)
+  };
+let formatSelects = (~prettyPrint, xs: list(Types.selectBuilder)) =>
+  switch (xs) {
+  | [] => "SELECT *"
+  | rest =>
+    let delimiter = prettyPrint ? ",\n       " : ", ";
+    "SELECT " ++ (xs |> List.rev |> List.map(formatSelect) |> String.concat(delimiter));
   };
 
 let formatJoin = (x: Types.joinBuilder): string =>
@@ -64,9 +66,11 @@ let formatWhere = (~prettyPrint=false, ~toSQL, w: Types.whereBuilder): string =>
   | IntInWhere(name, xs) => formatInOp(intForSQL, name, xs)
   | FloatInWhere(name, xs) => formatInOp(floatForSQL, name, xs)
   | StringInWhere(name, xs) => formatInOp(stringForSQL, name, xs)
-  | SubInWhere(name, builder) =>
+  | SubOpWhere(name, op, builder) =>
     escape(name)
-    ++ " IN ("
+    ++ " "
+    ++ compareOpToString(op)
+    ++ " ("
     ++ (prettyPrint ? "\n" : "")
     ++ toSQL({...builder, prettyPrint})
     ++ (prettyPrint ? "\n" : "")
@@ -74,13 +78,13 @@ let formatWhere = (~prettyPrint=false, ~toSQL, w: Types.whereBuilder): string =>
   | ExistsWhere(builder) =>
     "EXISTS ("
     ++ (prettyPrint ? "\n" : "")
-    ++ toSQL({...builder, prettyPrint, select: Some(RawSelect("SELECT 1"))})
+    ++ toSQL({...builder, prettyPrint, selects: [RawSelect("1")]})
     ++ (prettyPrint ? "\n" : "")
     ++ ")"
   | NotExistsWhere(builder) =>
     "NOT EXISTS ("
     ++ (prettyPrint ? "\n" : "")
-    ++ toSQL({...builder, prettyPrint, select: Some(RawSelect("SELECT 1"))})
+    ++ toSQL({...builder, prettyPrint, selects: [RawSelect("1")]})
     ++ (prettyPrint ? "\n" : "")
     ++ ")"
   };
@@ -148,7 +152,7 @@ let toSelectSQL = (builder: Types.builder, toSQL) => {
     | None => raise(Invalid_argument("Missing from"))
     };
   [
-    formatSelect(~prettyPrint, builder.select),
+    formatSelects(~prettyPrint, builder.selects),
     formatFrom(~prettyPrint, from),
     formatJoins(~prettyPrint, builder.joins),
     formatWheres(~prettyPrint, ~toSQL, builder.wheres),
