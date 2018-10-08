@@ -1,4 +1,6 @@
 let append = (toAppend: string, body: string): string => body ++ toAppend;
+let prepend = (toPrepend: string, body: string): string => toPrepend ++ body;
+
 let join = String.concat;
 let commaJoin = join(", ");
 let newlineJoin = join("\n");
