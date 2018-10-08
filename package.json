@@ -1,0 +1,32 @@
+{
+  "name": "legoml",
+  "version": "0.1.0",
+  "description": "SQL generator for OCaml/Reason",
+  "license": "MIT",
+  "esy": {
+    "build": "refmterr dune build -p lego",
+    "NOTE": "Optional release Section. Customizes result of `esy release`",
+    "release": {
+      "releasedBinaries": [],
+      "deleteFromBinaryRelease": [
+        "*esy_ocaml_*",
+        "*refmterr-*",
+        "ocaml-*"
+      ]
+    }
+  },
+  "dependencies": {
+    "@opam/dune": "*",
+    "refmterr": "*",
+    "ocaml": "~4.6.0"
+  },
+  "resolutions": {
+    "@esy-ocaml/esy-installer": "0.0.1",
+    "@opam/menhir": "20171013",
+    "@opam/re": "1.8.0"
+  },
+  "devDependencies": {
+    "@esy-ocaml/merlin": "*",
+    "ocaml": "~4.6.0"
+  }
+}
